@@ -1,0 +1,23 @@
+server:
+  port: 8081
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5433/oauth2
+    username: postgres
+    password: 0rr3qu14
+#    tomcat:
+#      test-while-idle: true
+#      validation-query: SELECT 1
+#    initialization-mode: never
+#    platform: mysql
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: create-drop
+    database-platform: org.hibernate.dialect.PostgreSQL9Dialect
+    properties:
+      hibernate:
+        temp:
+          use_jdbc_metadata_defaults: false
+    open-in-view: false
+check-user-scopes: true
