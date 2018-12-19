@@ -13,6 +13,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.security.oauth2.config.annotation.configurers.ClientDetailsServiceConfigurer;
@@ -39,14 +40,14 @@ public class OAuth2Configuration extends AuthorizationServerConfigurerAdapter {
     @Value("${check-user-scopes}")
     private Boolean checkUserScopes;
 
-    private final TokenStore tokenStore;
     private final UserService userService;
     private final ClientDetailsService clientDetailsService;
     private final AuthenticationManager authenticationManager;
+    private final UserDetailsService userDetailsService;
 
     @Autowired
-    public OAuth2Configuration(TokenStore tokenStore, UserService userService, ClientDetailsService cds, @Qualifier("authenticationManagerBean") AuthenticationManager am) {
-        this.tokenStore = tokenStore;
+    public OAuth2Configuration(UserDetailsService userDetailsService, UserService userService, ClientDetailsService cds, @Qualifier("authenticationManagerBean") AuthenticationManager am) {
+       this.userDetailsService = userDetailsService;
         this.userService = userService;
         this.clientDetailsService = cds;
         this.authenticationManager = am;
@@ -91,7 +92,8 @@ public class OAuth2Configuration extends AuthorizationServerConfigurerAdapter {
     public void configure(AuthorizationServerEndpointsConfigurer endpoints) {
         endpoints.tokenStore(tokenStore())
                 .tokenEnhancer(jwtAccessTokenConverter())
-                .authenticationManager(authenticationManager);
+                .authenticationManager(authenticationManager)
+                 .userDetailsService(userDetailsService);
     }
 
     @Bean
@@ -125,6 +127,9 @@ public class OAuth2Configuration extends AuthorizationServerConfigurerAdapter {
     }
 
     class CustomOauth2RequestFactory extends DefaultOAuth2RequestFactory {
+
+        @Autowired
+        TokenStore tokenStore;
 
         CustomOauth2RequestFactory(ClientDetailsService clientDetailsService) {
             super(clientDetailsService);

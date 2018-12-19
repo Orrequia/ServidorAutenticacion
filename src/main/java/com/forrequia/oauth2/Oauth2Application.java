@@ -294,12 +294,14 @@ public class Oauth2Application {
 
             orrequia.setName("Francisco");
             orrequia.setUsername("orrequia");
+            orrequia.setEnabled(true);
             orrequia.setPassword(DigestUtils.sha512Hex("1234"));
             orrequia.setRoles(Collections.singletonList(r1));
             userDAO.save(orrequia);
 
             valeria.setName("Valeria");
             valeria.setUsername("valeria");
+            orrequia.setEnabled(true);
             valeria.setPassword(DigestUtils.sha512Hex("4321"));
             valeria.setRoles(Collections.singletonList(r2));
             userDAO.save(valeria);
