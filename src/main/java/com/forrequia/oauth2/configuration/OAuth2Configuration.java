@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
@@ -27,7 +28,6 @@ import org.springframework.security.oauth2.provider.token.store.JwtAccessTokenCo
 import org.springframework.security.oauth2.provider.token.store.JwtTokenStore;
 import org.springframework.security.oauth2.provider.token.store.KeyStoreKeyFactory;
 
-import javax.sql.DataSource;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -39,12 +39,14 @@ public class OAuth2Configuration extends AuthorizationServerConfigurerAdapter {
     @Value("${check-user-scopes}")
     private Boolean checkUserScopes;
 
+    private final TokenStore tokenStore;
     private final UserService userService;
     private final ClientDetailsService clientDetailsService;
     private final AuthenticationManager authenticationManager;
 
     @Autowired
-    public OAuth2Configuration(UserService userService, ClientDetailsService cds, @Qualifier("authenticationManagerBean") AuthenticationManager am) {
+    public OAuth2Configuration(TokenStore tokenStore, UserService userService, ClientDetailsService cds, @Qualifier("authenticationManagerBean") AuthenticationManager am) {
+        this.tokenStore = tokenStore;
         this.userService = userService;
         this.clientDetailsService = cds;
         this.authenticationManager = am;
@@ -85,18 +87,8 @@ public class OAuth2Configuration extends AuthorizationServerConfigurerAdapter {
 
     }
 
-//    @Override
-//    public void configure(ClientDetailsServiceConfigurer clients) throws Exception {
-//        clients.jdbc(dataSource).passwordEncoder(passwordEncoder);
-//    }
-
     @Override
     public void configure(AuthorizationServerEndpointsConfigurer endpoints) {
-//        endpoints.tokenStore(tokenStore()).tokenEnhancer(jwtAccessTokenConverter())
-//                .authenticationManager(authenticationManager).userDetailsService(userDetailsService);
-//
-//        if(checkUserScopes)
-//            endpoints.requestFactory(requestFactory());
         endpoints.tokenStore(tokenStore())
                 .tokenEnhancer(jwtAccessTokenConverter())
                 .authenticationManager(authenticationManager);
@@ -117,12 +109,13 @@ public class OAuth2Configuration extends AuthorizationServerConfigurerAdapter {
         @Override
         public OAuth2AccessToken enhance(OAuth2AccessToken accessToken, OAuth2Authentication authentication) {
 
-            User user = userService.findByUsername(authentication.getName()).get();
+
+            User user = userService.findByUsername(authentication.getName()).orElseThrow(() -> new AuthenticationCredentialsNotFoundException("Usuario/Contraseña no es correcto."));
 
             Map<String, Object> info = new LinkedHashMap<>(accessToken.getAdditionalInformation());
 
             info.put("user_name", user.getUsername());
-            info.put("authorities", user.getAuthorities().stream().map(a -> ((GrantedAuthority) a).getAuthority()).collect(Collectors.toList()));
+            info.put("authorities", user.getAuthorities().stream().map(GrantedAuthority::getAuthority).collect(Collectors.toList()));
 
             DefaultOAuth2AccessToken customAccessToken = new DefaultOAuth2AccessToken(accessToken);
             customAccessToken.setAdditionalInformation(info);
@@ -132,9 +125,6 @@ public class OAuth2Configuration extends AuthorizationServerConfigurerAdapter {
     }
 
     class CustomOauth2RequestFactory extends DefaultOAuth2RequestFactory {
-
-        @Autowired
-        private TokenStore tokenStore;
 
         CustomOauth2RequestFactory(ClientDetailsService clientDetailsService) {
             super(clientDetailsService);

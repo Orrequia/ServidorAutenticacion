@@ -1,6 +1,5 @@
 package com.forrequia.oauth2.model;
 
-import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 
