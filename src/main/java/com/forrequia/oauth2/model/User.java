@@ -2,11 +2,13 @@ package com.forrequia.oauth2.model;
 
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import javax.persistence.*;
+import java.time.LocalDateTime;
 import java.util.*;
 
 
@@ -14,16 +16,23 @@ import java.util.*;
 @Setter
 @Entity
 @Table(name = "t_user")
-public class User extends BaseIdEntity implements UserDetails {
+public class User implements UserDetails {
 
-    @Column
-    private String name;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    protected Long id;
 
     @Column
     private String username;
 
     @Column
     private String password;
+
+    @CreationTimestamp
+    protected LocalDateTime createdOn;
+
+    @UpdateTimestamp
+    protected LocalDateTime updatedOn;
 
     @Column
     private boolean enabled;
@@ -36,12 +45,6 @@ public class User extends BaseIdEntity implements UserDetails {
 
     @Column(name = "credentials_expired")
     private boolean credentialsNonExpired;
-
-    @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(name = "role_user",
-            joinColumns = {@JoinColumn(name = "user_id", referencedColumnName = "id") },
-            inverseJoinColumns = {@JoinColumn(name = "role_id", referencedColumnName = "id") })
-    private List<Role> roles;
 
     @Override
     public boolean isEnabled() {
@@ -65,13 +68,6 @@ public class User extends BaseIdEntity implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        Set<GrantedAuthority> authorities = new HashSet<>();
-
-        roles.forEach(r -> {
-            authorities.add(new SimpleGrantedAuthority(r.getName()));
-            r.getPermissions().forEach(p -> authorities.add(new SimpleGrantedAuthority(p.getName())));
-        });
-
-        return authorities;
+        return new HashSet<>();
     }
 }
