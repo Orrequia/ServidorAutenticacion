@@ -1,6 +1,5 @@
 package com.forrequia.oauth2.configuration;
 
-import com.forrequia.oauth2.dao.UserDAO;
 import com.forrequia.oauth2.model.User;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.factory.annotation.Autowired;
