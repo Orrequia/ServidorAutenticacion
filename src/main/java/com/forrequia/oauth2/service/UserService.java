@@ -9,6 +9,5 @@ import java.util.Optional;
 
 public interface UserService extends UserDetailsService {
 
-    List<User> findAll(Pageable p);
     Optional<User> findByUsername(String username);
 }
