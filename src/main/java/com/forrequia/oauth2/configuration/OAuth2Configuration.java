@@ -1,10 +1,8 @@
 package com.forrequia.oauth2.configuration;
 
 import com.forrequia.oauth2.model.User;
-import com.forrequia.oauth2.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
@@ -29,23 +27,19 @@ import org.springframework.security.oauth2.provider.token.store.KeyStoreKeyFacto
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 
 @Configuration
 @EnableAuthorizationServer
 public class OAuth2Configuration extends AuthorizationServerConfigurerAdapter {
 
-    @Value("${check-user-scopes}")
-    private Boolean checkUserScopes;
-
-    private final UserService userService;
     private final ClientDetailsService clientDetailsService;
     private final AuthenticationManager authenticationManager;
     private final UserDetailsService userDetailsService;
 
     @Autowired
-    public OAuth2Configuration(UserDetailsService userDetailsService, UserService userService, ClientDetailsService cds, @Qualifier("authenticationManagerBean") AuthenticationManager am) {
+    public OAuth2Configuration(UserDetailsService userDetailsService, ClientDetailsService cds, @Qualifier("authenticationManagerBean") AuthenticationManager am) {
        this.userDetailsService = userDetailsService;
-        this.userService = userService;
         this.clientDetailsService = cds;
         this.authenticationManager = am;
     }
@@ -104,7 +98,8 @@ public class OAuth2Configuration extends AuthorizationServerConfigurerAdapter {
         public OAuth2AccessToken enhance(OAuth2AccessToken accessToken, OAuth2Authentication authentication) {
 
 
-            User user = userService.findByUsername(authentication.getName()).orElseThrow(() -> new AuthenticationCredentialsNotFoundException("Usuario/Contraseña no es correcto."));
+            User user = (User)Optional.ofNullable(userDetailsService.loadUserByUsername(authentication.getName()))
+                    .orElseThrow(() -> new AuthenticationCredentialsNotFoundException("Usuario/Contraseña no es correcto."));
 
             Map<String, Object> info = new LinkedHashMap<>(accessToken.getAdditionalInformation());
 
@@ -133,7 +128,7 @@ public class OAuth2Configuration extends AuthorizationServerConfigurerAdapter {
                         tokenStore.readRefreshToken(requestParameters.get("refresh_token")));
                 SecurityContextHolder.getContext()
                         .setAuthentication(new UsernamePasswordAuthenticationToken(authentication.getName(), null,
-                                userService.loadUserByUsername(authentication.getName()).getAuthorities()));
+                                userDetailsService.loadUserByUsername(authentication.getName()).getAuthorities()));
             }
             return super.createTokenRequest(requestParameters, authenticatedClient);
         }
